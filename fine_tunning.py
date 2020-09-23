@@ -23,8 +23,8 @@ import argparse
 # %%
 # determine the total number of image paths in training, validation,
 # and testing directories
-totalTrain = len(list(paths.list_images('Train')))
-totalVal = len(list(paths.list_images('Test')))
+totalTrain = len(list(paths.list_images('Train_face')))
+totalVal = len(list(paths.list_images('Test_face')))
 
 
 # %%
@@ -51,7 +51,7 @@ valAug.mean = mean
 # %%
 # initialize the training generator
 trainGen = trainAug.flow_from_directory(
-	'Train/',
+	'Train_face/',
 	class_mode="categorical",
 	target_size=(224, 224),
 	color_mode="rgb",
@@ -59,7 +59,7 @@ trainGen = trainAug.flow_from_directory(
 	batch_size=32)
 # initialize the validation generator
 valGen = valAug.flow_from_directory(
-	'Test/',
+	'Test_face/',
 	class_mode="categorical",
 	target_size=(224, 224),
 	color_mode="rgb",
