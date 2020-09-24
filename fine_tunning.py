@@ -11,60 +11,63 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.utils import to_categorical
 from keras_vggface.vggface import VGGFace
 from keras_vggface.utils import preprocess_input
 from sklearn.metrics import classification_report
 from imutils import paths
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
+import cv2
 
 
 # %%
-# determine the total number of image paths in training, validation,
-# and testing directories
-totalTrain = len(list(paths.list_images('Train_face')))
-totalVal = len(list(paths.list_images('Test_face')))
+# grab the list of images in our dataset directory, then initialize
+# the list of data (i.e., images) and class images
+print("[INFO] loading images...")
+imagePaths = list(paths.list_images("data"))
+data = []
+labels = []
+
+for imagePath in imagePaths:
+	# extract the class label from the filename, load the image and
+	# resize it to be a fixed 32x32 pixels, ignoring aspect ratio
+	label = imagePath.split(os.path.sep)[-2]
+	image = cv2.imread(imagePath)
+	try:
+		image = cv2.resize(image, (224, 224))
+	except:
+		print("Imagem com erro",imagePath)
+
+	# update the data and labels lists, respectively
+	data.append(image)
+	labels.append(label)
 
 
 # %%
-# initialize the training training data augmentation object
-trainAug = ImageDataGenerator(
-	rotation_range=25,
-	zoom_range=0.1,
-	width_shift_range=0.1,
-	height_shift_range=0.1,
-	shear_range=0.2,
-	horizontal_flip=True,
-	fill_mode="nearest")
-# initialize the validation/testing data augmentation object (which
-# we'll be adding mean subtraction to)
-valAug = ImageDataGenerator()
-# define the ImageNet mean subtraction (in RGB order) and set the
-# the mean subtraction value for each of the data augmentation
-# objects
-mean = np.array([123.68, 116.779, 103.939], dtype="float32")
-trainAug.mean = mean
-valAug.mean = mean
+# convert the data into a NumPy array, then preprocess it by scaling
+# all pixel intensities to the range [0, 1]
+data = np.array(data, dtype="float") / 255.0
 
+# encode the labels (which are currently strings) as integers and then
+# one-hot encode them
+le = LabelEncoder()
+labels = le.fit_transform(labels)
+labels = to_categorical(labels)
 
-# %%
-# initialize the training generator
-trainGen = trainAug.flow_from_directory(
-	'Train_face/',
-	class_mode="categorical",
-	target_size=(224, 224),
-	color_mode="rgb",
-	shuffle=True,
-	batch_size=32)
-# initialize the validation generator
-valGen = valAug.flow_from_directory(
-	'Test_face/',
-	class_mode="categorical",
-	target_size=(224, 224),
-	color_mode="rgb",
-	shuffle=False,
-	batch_size=32)
+# partition the data into training and testing splits using 75% of
+# the data for training and the remaining 25% for testing
+(trainX, testX, trainY, testY) = train_test_split(data, labels,
+	test_size=0.25, random_state=42)
+
+# construct the training image generator for data augmentation
+aug = ImageDataGenerator(rotation_range=20, zoom_range=0.15,
+	width_shift_range=0.2, height_shift_range=0.2, shear_range=0.15,
+	horizontal_flip=True, fill_mode="nearest")
 
 
 # %%
@@ -105,12 +108,10 @@ model.compile(loss="categorical_crossentropy", optimizer=opt,
 # %%
 # train the model
 print("[INFO] training model...")
-H = model.fit_generator(
-	trainGen,
-	steps_per_epoch=totalTrain // 32,
-	validation_data=valGen,
-	validation_steps=totalVal // 32,
-	epochs=228)
+H = model.fit_generator(aug.flow(trainX, trainY, batch_size=32),
+	validation_data=(testX, testY),
+	steps_per_epoch=len(trainX) // 32,
+	epochs=30)
 
 
 # %%
