@@ -116,11 +116,7 @@ callback = [
         monitor='val_acc',
         mode='max',
         save_best_only=True
-    ),
-    TensorBoard(
-        log_dir='./logs',
-        update_freq=30
-    ),
+    )
 ]
 
 
