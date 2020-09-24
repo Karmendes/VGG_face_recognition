@@ -1,4 +1,5 @@
 Test/*
 Train/*
-Test_face/*
-Train_face/*
+data/Test_face/*
+data/Train_face/*
+*.h5
