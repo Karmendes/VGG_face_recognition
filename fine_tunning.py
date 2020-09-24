@@ -41,6 +41,7 @@ for imagePath in imagePaths:
 	image = cv2.imread(imagePath)
 	try:
 		image = cv2.resize(image, (224, 224))
+		image = np.expand_dims(image, axis=0)
 	except:
 		print("Imagem com erro",imagePath)
 
