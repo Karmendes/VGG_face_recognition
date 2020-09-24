@@ -3,3 +3,4 @@ Train/*
 data/Test_face/*
 data/Train_face/*
 *.h5
+logs/*

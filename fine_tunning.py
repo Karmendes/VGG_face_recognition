@@ -12,6 +12,7 @@ from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.callbacks import ModelCheckpoint,EarlyStopping,TensorBoard
 from keras_vggface.vggface import VGGFace
 from keras_vggface.utils import preprocess_input
 from sklearn.metrics import classification_report
@@ -41,7 +42,7 @@ for imagePath in imagePaths:
 	image = cv2.imread(imagePath)
 	try:
 		image = cv2.resize(image, (224, 224))
-		image = np.expand_dims(image, axis=0)
+		#image = np.expand_dims(image, axis=0)
 	except:
 		print("Imagem com erro",imagePath)
 
@@ -108,12 +109,31 @@ model.compile(loss="categorical_crossentropy", optimizer=opt,
 
 
 # %%
+# set the callbacks
+callback = [
+    ModelCheckpoint(
+        filepath='model.{epoch:02d}-{val_loss:.2f}.h5',
+        monitor='val_acc',
+        mode='max',
+        save_best_only=True
+    ),
+    TensorBoard(
+        log_dir='./logs',
+        update_freq=30
+    ),
+]
+
+
+# %%
 # train the model
 print("[INFO] training model...")
-H = model.fit_generator(aug.flow(trainX, trainY, batch_size=32),
+H = model.fit_generator(
+	aug.flow(trainX, trainY, batch_size=32),
 	validation_data=(testX, testY),
 	steps_per_epoch=len(trainX) // 32,
-	epochs=30)
+	epochs=240,
+	callbacks=[callback]
+)
 
 
 # %%
